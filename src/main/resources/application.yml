@@ -1,0 +1,23 @@
+spring:
+    config:
+        import: optional:file:.env[.properties]
+    profiles:
+        active: local
+
+    servlet:
+        multipart:
+            enabled: true
+            max-file-size: 50MB
+            max-request-size: 50MB
+
+server:
+    port: ${PORT:8080}
+
+#Swagger
+springdoc:
+    api-docs:
+        path: /v3/api-docs
+    swagger-ui:
+        path: /swagger-ui/index.html
+        display-request-duration: true
+        operations-sorter: method
