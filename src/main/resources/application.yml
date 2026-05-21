@@ -34,7 +34,13 @@ spring:
         password: ${LOCAL_DB_PASSWORD}
         driver-class-name: com.mysql.cj.jdbc.Driver
     jpa:
+        show-sql: true
         hibernate:
             ddl-auto: update
         properties:
             dialect: org.hibernate.dialect.MySQLDialect
+
+
+logging:
+    level:
+        org.hibernate.type.descriptor.sql.BasicBinder: trace
