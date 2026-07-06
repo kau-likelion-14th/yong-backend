@@ -43,11 +43,11 @@ public enum ErrorCode implements BaseCode { // 실패
     S3_DELETE_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "S3_5032", "파일 삭제에 실패했습니다."),
 
     //follow
-    FOLLOW_SELF_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "FOLLOW_4001", "자기 자신을 팔로우할 수 없습니다."),
+    FOLLOW_SELF_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "FOLLOW_4001", "자기 자신을 팔로우/언팔로우할 수 없습니다."),
     FOLLOW_TARGET_NOT_FOUND(HttpStatus.NOT_FOUND, "FOLLOW_4041", "팔로우 대상 사용자가 존재하지 않습니다."),
     FOLLOW_ALREADY_EXISTS(HttpStatus.CONFLICT, "FOLLOW_4091", "이미 팔로우한 사용자입니다."),
     FOLLOW_NOT_FOUND(HttpStatus.NOT_FOUND, "FOLLOW_4042", "팔로우 관계가 존재하지 않습니다."),
-    INVALID_HANDLE_FORMAT(HttpStatus.BAD_REQUEST, "F002", "유저 검색 형식이 올바르지 않습니다. (예: 김동현#1234)"),
+    INVALID_HANDLE_FORMAT(HttpStatus.BAD_REQUEST, "F002", "유저 검색 형식이 올바르지 않습니다. (예: 김동현#12345678)"),
 
     // Category
     CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, "CATEGORY_4041", "해당 카테고리를 찾을 수 없습니다."),

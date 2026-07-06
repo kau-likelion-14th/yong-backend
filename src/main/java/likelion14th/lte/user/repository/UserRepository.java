@@ -17,5 +17,5 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT u FROM User u " +
             "WHERE u.id != :userId " +
             "AND NOT EXISTS (SELECT f FROM Follow f WHERE f.fromUser.id = :userId AND f.toUser.id = u.id)")
-    Page<User> findCanFollowUser(@Param("userId") Long userId, Pageable pageable);
+    Page<User> findCanFollowUsers(@Param("userId") Long userId, Pageable pageable);
 }
