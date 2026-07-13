@@ -96,7 +96,7 @@ public class FollowService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new GeneralException(ErrorCode.USER_NOT_FOUND));
 
-        return followRepository.findByFromUser(user).stream()
+        return user.getFollowings().stream()
                 .map(follow -> FollowUserResponse.from(follow.getToUser()))
                 .toList();
     }
