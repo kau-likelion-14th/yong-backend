@@ -20,20 +20,20 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
-
 public class FollowService {
     private final FollowRepository followRepository;
     private final UserRepository userRepository;
 
     private static UserNameDto getUserNameDto(String name) {
-
-        if (!name.contains("#")){
+        if (!name.contains("#")) {
             return new UserNameDto(name, null);
         }
+
         String[] parts = name.split("#", 2);
-        if (parts[1].length() != 8){
+        if (parts[1].length() != 8) {
             throw new GeneralException(ErrorCode.INVALID_HANDLE_FORMAT);
         }
+
         return new UserNameDto(parts[0], parts[1]);
     }
 
@@ -45,11 +45,11 @@ public class FollowService {
         User toUser = userRepository.findById(toUserId)
                 .orElseThrow(() -> new GeneralException(ErrorCode.FOLLOW_TARGET_NOT_FOUND));
 
-        if(fromUser.getId().equals(toUser.getId())){
+        if (fromUser.getId().equals(toUser.getId())) {
             throw new GeneralException(ErrorCode.FOLLOW_SELF_NOT_ALLOWED);
         }
 
-        if (followRepository.existsByFromUserAndToUser(fromUser,toUser)){
+        if (followRepository.existsByFromUserAndToUser(fromUser, toUser)) {
             throw new GeneralException(ErrorCode.FOLLOW_ALREADY_EXISTS);
         }
 
@@ -71,7 +71,7 @@ public class FollowService {
         User toUser = userRepository.findById(toUserId)
                 .orElseThrow(() -> new GeneralException(ErrorCode.FOLLOW_TARGET_NOT_FOUND));
 
-        if(fromUser.getId().equals(toUser.getId())){
+        if (fromUser.getId().equals(toUser.getId())) {
             throw new GeneralException(ErrorCode.FOLLOW_SELF_NOT_ALLOWED);
         }
 
@@ -96,7 +96,7 @@ public class FollowService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new GeneralException(ErrorCode.USER_NOT_FOUND));
 
-        return user.getFollowings().stream()
+        return followRepository.findByFromUser(user).stream()
                 .map(follow -> FollowUserResponse.from(follow.getToUser()))
                 .toList();
     }
@@ -111,27 +111,31 @@ public class FollowService {
     }
 
     @Transactional(readOnly = true)
-    public Page<FollowUserResponse> searchCanFollowers(Long userId, String targetName, Pageable pageable){
+    public Page<FollowUserResponse> searchCanFollowers(Long userId, String targetName, Pageable pageable) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new GeneralException(ErrorCode.USER_NOT_FOUND));
 
         UserNameDto nameDto = getUserNameDto(targetName);
         Page<User> users;
-        if(nameDto.userTag() != null&& !nameDto.userTag().isEmpty()){
+
+        if (nameDto.userTag() != null && !nameDto.userTag().isEmpty()) {
             User target = userRepository.findByUserTag(nameDto.userTag())
                     .orElse(null);
-            if(target == null){
+
+            if (target == null) {
                 return Page.empty(pageable);
             }
-            users = new PageImpl<>(List.of(target),pageable,1);
-        }else{
+
+            users = new PageImpl<>(List.of(target), pageable, 1);
+        } else {
             users = userRepository.findByUsernameContainingIgnoreCase(nameDto.userName(), pageable);
         }
+
         List<User> canFollowUsers = users.getContent().stream()
                 .filter(target -> !target.getId().equals(userId))
                 .filter(target -> !followRepository.existsByFromUserAndToUser(user, target))
                 .toList();
 
-        return new PageImpl<>(canFollowUsers,pageable,canFollowUsers.size()).map(FollowUserResponse::from);
+        return new PageImpl<>(canFollowUsers, pageable, canFollowUsers.size()).map(FollowUserResponse::from);
     }
 }
