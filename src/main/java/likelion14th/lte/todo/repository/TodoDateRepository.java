@@ -18,4 +18,8 @@ public interface TodoDateRepository extends JpaRepository<TodoDate, Long> {
 
     List<TodoDate> findAllByTodo_User_IdAndDateBetween(Long userId, LocalDate startDate, LocalDate endDate);
 
+    boolean existsByTodo_User_IdAndDateAndCompleted(Long userId, LocalDate date, boolean completed);
+
+    long countByTodo_User_IdAndDateBetweenAndCompleted(Long userId, LocalDate startDate, LocalDate endDate, boolean completed);
+
 }
