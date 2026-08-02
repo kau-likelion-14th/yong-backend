@@ -32,11 +32,8 @@ public class StatisticService {
         return StatisticResponse.from(user.getStatistic());
     }
 
-    @Transactional
-    public void updateStatistic(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new GeneralException(ErrorCode.USER_NOT_FOUND));
-
+    private void updateStatistic(User user) {
+        Long userId = user.getId();
         LocalDate day = LocalDate.now().minusDays(1);
         LocalDate startDate = day.minusDays(30);
 
@@ -64,7 +61,7 @@ public class StatisticService {
 
         do {
             users = userRepository.findAll(PageRequest.of(page, size));
-            users.forEach(user -> updateStatistic(user.getId()));
+            users.forEach(this::updateStatistic);
             entityManager.flush();
             entityManager.clear();
             page++;
