@@ -1,7 +1,8 @@
 package likelion14th.lte.todo.service;
 
+import likelion14th.lte.global.api.ErrorCode;
+import likelion14th.lte.global.exception.GeneralException;
 import likelion14th.lte.todo.dto.response.TodoCalendarMonthResponse;
-import likelion14th.lte.todo.entity.Todo;
 import likelion14th.lte.todo.entity.TodoDate;
 import likelion14th.lte.todo.repository.TodoDateRepository;
 import likelion14th.lte.user.repository.UserRepository;
@@ -24,6 +25,9 @@ public class TodoCalendarService {
 
     @Transactional(readOnly = true)
     public TodoCalendarMonthResponse getMonthRemainingCounts(Long userId,int year,int month) {
+        userRepository.findById(userId)
+                .orElseThrow(() -> new GeneralException(ErrorCode.USER_NOT_FOUND));
+
         LocalDate startDate = LocalDate.of(year,month,1);
         LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
 
