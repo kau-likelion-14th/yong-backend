@@ -57,13 +57,16 @@ public class TodoService {
     }
 
     private void validateRoutineRequest(LocalDate startDate, LocalDate endDate, WeekEnum week) {
+        if (startDate == null) {
+            throw new GeneralException(ErrorCode.TODO_ROUTINE_START_DATE_REQUIRED);
+        }
         if (endDate == null) {
             throw new GeneralException(ErrorCode.TODO_ROUTINE_END_DATE_REQUIRED);
         }
         if (week == null) {
             throw new GeneralException(ErrorCode.TODO_ROUTINE_WEEK_REQUIRED);
         }
-        if (startDate != null && startDate.isAfter(endDate)) {
+        if (startDate.isAfter(endDate)) {
             throw new GeneralException(ErrorCode.TODO_ROUTINE_DATE_RANGE_INVALID);
         }
     }

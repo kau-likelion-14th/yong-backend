@@ -56,6 +56,7 @@ public enum ErrorCode implements BaseCode { // 실패
     TODO_NOT_FOUND(HttpStatus.NOT_FOUND, "TODO_4041", "해당 투두를 찾을 수 없습니다."),
     TODO_ACCESS_DENIED(HttpStatus.FORBIDDEN, "TODO_4031", "해당 투두에 접근할 권한이 없습니다."),
 
+    TODO_ROUTINE_START_DATE_REQUIRED(HttpStatus.BAD_REQUEST, "TODO_4010", "시작 날짜 입력은 필수 입니다."),
     TODO_ROUTINE_END_DATE_REQUIRED(HttpStatus.BAD_REQUEST, "TODO_4001", "종료 날짜 입력은 필수 입니다."),
     TODO_ROUTINE_DATE_RANGE_INVALID(HttpStatus.BAD_REQUEST, "TODO_4002", "시작 날짜는 종료 날짜의 이전이어야 합니다."),
     TODO_ROUTINE_WEEK_REQUIRED(HttpStatus.BAD_REQUEST, "TODO_4003", "요일 선택은 필수 입니다."),
