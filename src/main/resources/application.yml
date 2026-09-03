@@ -13,6 +13,10 @@ spring:
 server:
     port: ${PORT:8080}
 
+youtube:
+    api-key: ${YOUTUBE_API_KEY}
+    api-base: https://www.googleapis.com/youtube/v3
+
 # Swagger
 springdoc:
     api-docs:

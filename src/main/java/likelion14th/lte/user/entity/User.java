@@ -2,6 +2,7 @@ package likelion14th.lte.user.entity;
 
 import jakarta.persistence.*;
 import likelion14th.lte.Entity.BaseEntity;
+import likelion14th.lte.yotube.domain.SavedSong;
 import likelion14th.lte.follow.entity.Follow;
 import likelion14th.lte.statistic.entity.Statistic;
 import lombok.AccessLevel;
@@ -43,6 +44,10 @@ public class User extends BaseEntity {
     @OneToMany(mappedBy = "fromUser", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Follow> followings;
 
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL,
+            orphanRemoval = true)
+    private List<SavedSong> saveSongs;
+
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "statistic_id", nullable = false, unique = true)
     private Statistic statistic;
@@ -55,6 +60,7 @@ public class User extends BaseEntity {
         this.followers = new ArrayList<>();
         this.followings = new ArrayList<>();
         this.statistic = Statistic.create();
+        this.saveSongs = new ArrayList<>();
     }
 
     public void updateIntroduction(String introduction){
