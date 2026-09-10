@@ -2,6 +2,7 @@ package likelion14th.lte.user.entity;
 
 import jakarta.persistence.*;
 import likelion14th.lte.Entity.BaseEntity;
+import likelion14th.lte.login.domain.RefreshToken;
 import likelion14th.lte.yotube.domain.SavedSong;
 import likelion14th.lte.follow.entity.Follow;
 import likelion14th.lte.statistic.entity.Statistic;
@@ -22,6 +23,9 @@ public class User extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(unique = true)
+    private String providerId;
 
     @Column(nullable = false)
     private String username;
@@ -48,12 +52,16 @@ public class User extends BaseEntity {
             orphanRemoval = true)
     private List<SavedSong> saveSongs;
 
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private RefreshToken refreshToken;
+
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "statistic_id", nullable = false, unique = true)
     private Statistic statistic;
 
     @Builder(access = AccessLevel.PUBLIC)
-    private User (String username, String userTag, String introduction){
+    private User(String providerId, String username, String userTag, String introduction){
+        this.providerId = providerId;
         this.username = username;
         this.userTag = userTag;
         this.introduction = introduction;
