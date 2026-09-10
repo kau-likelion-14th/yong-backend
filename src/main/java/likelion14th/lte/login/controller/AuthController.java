@@ -94,6 +94,9 @@ public class AuthController {
             @AuthenticationPrincipal Jwt jwt,
             HttpServletResponse httpResponse
     ) {
+        Long userId = Long.valueOf(jwt.getSubject());
+        authService.withdraw(userId);
+
         httpResponse.addHeader(
                 HttpHeaders.SET_COOKIE,
                 deleteRefreshTokenCookie().toString()
