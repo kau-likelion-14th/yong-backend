@@ -42,6 +42,7 @@ public class JwtProvider {
 
     public String createRefreshToken(Long userId) {
         Instant now = Instant.now();
+
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .subject(String.valueOf(userId))
                 .issuedAt(now)
