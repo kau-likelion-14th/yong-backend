@@ -95,7 +95,7 @@ public class AuthService {
     User user = userRepository.findById(userId)
             .orElseThrow(() -> new GeneralException(ErrorCode.USER_NOT_FOUND));
 
-        refreshTokenRepository.findByUser(user).ifPresent(refreshTokenRepository::delete);
+        refreshTokenRepository.deleteByUserId(user.getId());
     }
 
     private String createUniqueUserTag() {
