@@ -72,9 +72,21 @@ public class JwtConfig {
                     new OAuth2Error("invalid_token", expectedType + " 토큰이 아닙니다.", null)
             );
         };
+        OAuth2TokenValidator<Jwt> subjectValidator = jwt -> {
+            String subject = jwt.getSubject();
+
+            try {
+                Long.valueOf(subject);
+                return OAuth2TokenValidatorResult.success();
+            } catch (Exception e) {
+                return OAuth2TokenValidatorResult.failure(
+                        new OAuth2Error("missing_authority", "권한 정보가 없는 token입니다.", null)
+                );
+            }
+        };
 
         decoder.setJwtValidator(
-                new DelegatingOAuth2TokenValidator<>(defaultValidator, typeValidator)
+                new DelegatingOAuth2TokenValidator<>(defaultValidator, typeValidator, subjectValidator)
         );
 
         return decoder;
