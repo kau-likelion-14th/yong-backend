@@ -3,7 +3,7 @@ package likelion14th.lte.user.entity;
 import jakarta.persistence.*;
 import likelion14th.lte.Entity.BaseEntity;
 import likelion14th.lte.login.domain.RefreshToken;
-import likelion14th.lte.yotube.domain.SavedSong;
+import likelion14th.lte.youtube.domain.SavedSong;
 import likelion14th.lte.follow.entity.Follow;
 import likelion14th.lte.statistic.entity.Statistic;
 import lombok.AccessLevel;

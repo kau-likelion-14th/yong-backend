@@ -1,7 +1,7 @@
-package likelion14th.lte.yotube.dto.resopnse;
+package likelion14th.lte.youtube.dto.response;
 
 
-import likelion14th.lte.yotube.domain.SavedSong;
+import likelion14th.lte.youtube.domain.SavedSong;
 import lombok.Builder;
 import lombok.Getter;
 

@@ -1,4 +1,4 @@
-package likelion14th.lte.yotube.client;
+package likelion14th.lte.youtube.client;
 
 import likelion14th.lte.global.exception.GeneralException;
 import likelion14th.lte.global.api.ErrorCode;

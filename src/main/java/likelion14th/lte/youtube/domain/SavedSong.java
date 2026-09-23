@@ -1,4 +1,4 @@
-package likelion14th.lte.yotube.domain;
+package likelion14th.lte.youtube.domain;
 
 import jakarta.persistence.*;
 import likelion14th.lte.user.entity.User;

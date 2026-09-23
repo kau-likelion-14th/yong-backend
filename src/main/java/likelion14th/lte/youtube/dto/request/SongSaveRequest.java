@@ -1,4 +1,4 @@
-package likelion14th.lte.yotube.dto.request;
+package likelion14th.lte.youtube.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
