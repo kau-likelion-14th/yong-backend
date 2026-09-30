@@ -1,15 +1,15 @@
-package likelion14th.lte.yotube.controller;
+package likelion14th.lte.youtube.controller;
 
 
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import likelion14th.lte.global.api.ApiResponse;
 import likelion14th.lte.global.api.SuccessCode;
-import likelion14th.lte.yotube.client.YouTubeClient;
-import likelion14th.lte.yotube.dto.request.SongSaveRequest;
-import likelion14th.lte.yotube.dto.resopnse.SavedSongResponse;
-import likelion14th.lte.yotube.dto.resopnse.YouTubeSongitemResponse;
-import likelion14th.lte.yotube.service.YouTubeService;
+import likelion14th.lte.youtube.client.YouTubeClient;
+import likelion14th.lte.youtube.dto.request.SongSaveRequest;
+import likelion14th.lte.youtube.dto.response.SavedSongResponse;
+import likelion14th.lte.youtube.dto.response.YouTubeSongItemResponse;
+import likelion14th.lte.youtube.service.YouTubeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,7 +24,7 @@ public class YouTubeController {
 
     @GetMapping("/search")
     @Operation(summary = "유튜브 음악 검색")
-    public ApiResponse<List<YouTubeSongitemResponse>> search(
+    public ApiResponse<List<YouTubeSongItemResponse>> search(
             @RequestParam String q,
             @RequestParam(defaultValue = "10") int limit) {
         return ApiResponse.onSuccess(SuccessCode.OK, youTubeService.searchSongs(q, limit));

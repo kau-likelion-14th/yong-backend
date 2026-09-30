@@ -22,7 +22,8 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(
             HttpSecurity http,
-            @Qualifier("accessTokenDecoder") JwtDecoder accessTokenDecoder
+            @Qualifier("accessTokenDecoder") JwtDecoder accessTokenDecoder,
+            JwtSecurityExceptionHandler jwtSecurityExceptionHandler
     ) throws Exception {
 
         http
@@ -46,8 +47,13 @@ public class SecurityConfig {
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(jwtSecurityExceptionHandler)
+                        .accessDeniedHandler(jwtSecurityExceptionHandler)
+                )
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt.decoder(accessTokenDecoder))
+                        .authenticationEntryPoint(jwtSecurityExceptionHandler)
                 );
 
         return http.build();

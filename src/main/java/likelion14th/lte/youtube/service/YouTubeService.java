@@ -1,4 +1,4 @@
-package likelion14th.lte.yotube.service;
+package likelion14th.lte.youtube.service;
 
 
 import tools.jackson.databind.JsonNode;
@@ -6,11 +6,11 @@ import likelion14th.lte.global.api.ErrorCode;
 import likelion14th.lte.global.exception.GeneralException;
 import likelion14th.lte.user.entity.User;
 import likelion14th.lte.user.repository.UserRepository;
-import likelion14th.lte.yotube.client.YouTubeClient;
-import likelion14th.lte.yotube.domain.SavedSong;
-import likelion14th.lte.yotube.dto.resopnse.SavedSongResponse;
-import likelion14th.lte.yotube.dto.resopnse.YouTubeSongitemResponse;
-import likelion14th.lte.yotube.repository.SavedSongRepository;
+import likelion14th.lte.youtube.client.YouTubeClient;
+import likelion14th.lte.youtube.domain.SavedSong;
+import likelion14th.lte.youtube.dto.response.SavedSongResponse;
+import likelion14th.lte.youtube.dto.response.YouTubeSongItemResponse;
+import likelion14th.lte.youtube.repository.SavedSongRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,11 +46,11 @@ public class YouTubeService {
     }
 
     @Transactional(readOnly = true)
-    public List<YouTubeSongitemResponse> searchSongs(String query, int limit) {
+    public List<YouTubeSongItemResponse> searchSongs(String query, int limit) {
         JsonNode root = youTubeClient.searchVideoRaw(query, limit);
         JsonNode items = root.path("items");
 
-        List<YouTubeSongitemResponse> result = new ArrayList<>();
+        List<YouTubeSongItemResponse> result = new ArrayList<>();
 
         if (!items.isArray()) {
             return result;
@@ -65,7 +65,7 @@ public class YouTubeService {
 
             JsonNode snippet = item.path("snippet");
 
-            result.add(YouTubeSongitemResponse.builder()
+            result.add(YouTubeSongItemResponse.builder()
                     .songId(videoId)
                     .title(snippet.path("title").asText(""))
                     .artist(snippet.path("channelTitle").asText(""))

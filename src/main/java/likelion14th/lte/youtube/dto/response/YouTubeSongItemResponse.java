@@ -1,4 +1,4 @@
-package likelion14th.lte.yotube.dto.resopnse;
+package likelion14th.lte.youtube.dto.response;
 
 
 import lombok.Builder;
@@ -6,7 +6,7 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class YouTubeSongitemResponse {
+public class YouTubeSongItemResponse {
 
     private String songId;
     private String title;
