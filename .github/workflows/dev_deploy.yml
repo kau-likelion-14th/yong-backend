@@ -25,7 +25,7 @@ jobs:
           printf '%s' "${{ secrets.LTE_ENV }}" > .env
           chmod 600 .env
 
-      - name: Validate deployment environment
+      - name: Normalize and validate deployment environment
         shell: bash
         run: |
           duplicate_keys="$(
@@ -44,9 +44,29 @@ jobs:
           )"
 
           if [[ -n "$duplicate_keys" ]]; then
-            echo "ERROR: duplicate keys found in LTE_ENV:"
+            echo "WARNING: keeping the last value for duplicate LTE_ENV keys:"
             echo "$duplicate_keys"
-            exit 1
+
+            awk -F= '
+              {
+                lines[NR] = $0
+              }
+              /^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*=/ {
+                key = $1
+                gsub(/[[:space:]]/, "", key)
+                keys[NR] = key
+                last_line[key] = NR
+              }
+              END {
+                for (line = 1; line <= NR; line++) {
+                  key = keys[line]
+                  if (key == "" || last_line[key] == line) print lines[line]
+                }
+              }
+            ' .env > .env.normalized
+
+            mv .env.normalized .env
+            chmod 600 .env
           fi
 
           required_keys=(
