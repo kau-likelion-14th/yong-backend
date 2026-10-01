@@ -25,6 +25,73 @@ jobs:
           printf '%s' "${{ secrets.LTE_ENV }}" > .env
           chmod 600 .env
 
+      - name: Normalize and validate deployment environment
+        shell: bash
+        run: |
+          duplicate_keys="$(
+            awk -F= '
+              /^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*=/ {
+                key = $1
+                gsub(/[[:space:]]/, "", key)
+                count[key]++
+              }
+              END {
+                for (key in count) {
+                  if (count[key] > 1) print key
+                }
+              }
+            ' .env
+          )"
+
+          if [[ -n "$duplicate_keys" ]]; then
+            echo "WARNING: keeping the last value for duplicate LTE_ENV keys:"
+            echo "$duplicate_keys"
+
+            awk -F= '
+              {
+                lines[NR] = $0
+              }
+              /^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*=/ {
+                key = $1
+                gsub(/[[:space:]]/, "", key)
+                keys[NR] = key
+                last_line[key] = NR
+              }
+              END {
+                for (line = 1; line <= NR; line++) {
+                  key = keys[line]
+                  if (key == "" || last_line[key] == line) print lines[line]
+                }
+              }
+            ' .env > .env.normalized
+
+            mv .env.normalized .env
+            chmod 600 .env
+          fi
+
+          required_keys=(
+            JWT_SECRET
+            KAKAO_REST_API_KEY
+            KAKAO_CLIENT_SECRET
+            DB_URL
+            DB_USERNAME
+            DB_PASSWORD
+            YOUTUBE_API_KEY
+            AWS_ACCESS_KEY
+            AWS_SECRET_KEY
+            AWS_BUCKET
+            AWS_REGION
+          )
+
+          for key in "${required_keys[@]}"; do
+            if ! grep -Eq "^${key}=.+$" .env; then
+              echo "ERROR: required key is missing or empty in LTE_ENV: ${key}"
+              exit 1
+            fi
+          done
+
+          echo "OK: deployment environment is valid"
+
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
