@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 public class StatisticSchedule {
     private final StatisticService statisticService;
 
-    @Scheduled(cron = "0 10 0 * * *")
+    @Scheduled(cron = "0 10 0 * * *", zone = "Asia/Seoul")
     public void updateAllStatistics() {
         statisticService.updateAllStatistics();
     }

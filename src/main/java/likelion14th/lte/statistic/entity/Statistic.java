@@ -13,10 +13,9 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 @Entity
 @Getter
@@ -55,33 +54,26 @@ public class Statistic extends BaseEntity {
     }
 
     public WeekEnum getMostTodoWeek() {
-        return statWeeks.stream()
-                .max(Comparator.comparingInt(StatWeek::getCount))
+        int maxCount = statWeeks.stream()
+                .mapToInt(StatWeek::getCount)
+                .max()
+                .orElse(0);
+        if (maxCount == 0) {
+            return null;
+        }
+
+        List<WeekEnum> mostTodoWeeks = statWeeks.stream()
+                .filter(statWeek -> statWeek.getCount() == maxCount)
                 .map(StatWeek::getWeek)
-                .orElse(null);
+                .toList();
+        return mostTodoWeeks.size() == 1 ? mostTodoWeeks.getFirst() : null;
     }
 
-    public void increaseStreakIfSuccess(boolean success) {
-        if (success) {
-            this.streak++;
-            return;
-        }
-        this.streak = 0;
-    }
-
-    public void increaseWeekCount(LocalDate day) {
-        statWeeks.stream()
-                .filter(w -> w.getWeek().toDayOfWeek() == day.getDayOfWeek())
-                .findFirst()
-                .ifPresent(StatWeek::increaseCount);
-    }
-
-    public void updateMonthPercent(long completedCount, long incompleteCount) {
-        long totalCount = completedCount + incompleteCount;
-        if (totalCount == 0) {
-            this.monthPercent = 0;
-            return;
-        }
-        this.monthPercent = (int) (completedCount * 100 / totalCount);
+    public void replace(int streak, int monthPercent, Map<WeekEnum, Integer> completedCountsByWeek) {
+        this.streak = streak;
+        this.monthPercent = monthPercent;
+        statWeeks.forEach(statWeek -> statWeek.updateCount(
+                completedCountsByWeek.getOrDefault(statWeek.getWeek(), 0)
+        ));
     }
 }

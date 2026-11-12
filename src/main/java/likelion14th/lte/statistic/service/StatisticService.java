@@ -15,6 +15,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDate;
 
 @Service
@@ -23,34 +24,34 @@ public class StatisticService {
     private final UserRepository userRepository;
     private final TodoDateRepository todoDateRepository;
     private final EntityManager entityManager;
+    private final StatisticCalculator statisticCalculator;
+    private final Clock clock;
 
     @Transactional(readOnly = true)
     public StatisticResponse getStatistic(Long userId) {
-        User user = userRepository.findById(userId)
+        userRepository.findById(userId)
                 .orElseThrow(() -> new GeneralException(ErrorCode.USER_NOT_FOUND));
 
-        return StatisticResponse.from(user.getStatistic());
+        LocalDate today = LocalDate.now(clock);
+        StatisticSnapshot snapshot = calculateStatistic(userId, today);
+        return StatisticResponse.from(snapshot);
     }
 
-    private void updateStatistic(User user) {
-        Long userId = user.getId();
-        LocalDate day = LocalDate.now().minusDays(1);
-        LocalDate startDate = day.minusDays(30);
-
-        boolean hasCompletedTodo = todoDateRepository.existsByTodo_User_IdAndDateAndCompleted(userId, day, true);
-        boolean hasIncompleteTodo = todoDateRepository.existsByTodo_User_IdAndDateAndCompleted(userId, day, false);
-        boolean success = hasCompletedTodo && !hasIncompleteTodo;
-
+    private void updateStatistic(User user, LocalDate today) {
+        StatisticSnapshot snapshot = calculateStatistic(user.getId(), today);
         Statistic statistic = user.getStatistic();
-        statistic.increaseStreakIfSuccess(success);
+        statistic.replace(
+                snapshot.streak(),
+                snapshot.monthPercent(),
+                snapshot.completedCountsByWeek()
+        );
+    }
 
-        if (success) {
-            statistic.increaseWeekCount(day);
-        }
-
-        long completedCount = todoDateRepository.countByTodo_User_IdAndDateBetweenAndCompleted(userId, startDate, day, true);
-        long incompleteCount = todoDateRepository.countByTodo_User_IdAndDateBetweenAndCompleted(userId, startDate, day, false);
-        statistic.updateMonthPercent(completedCount, incompleteCount);
+    private StatisticSnapshot calculateStatistic(Long userId, LocalDate today) {
+        return statisticCalculator.calculate(
+                todoDateRepository.summarizeByUserIdUntil(userId, today),
+                today
+        );
     }
 
     @Transactional
@@ -58,10 +59,11 @@ public class StatisticService {
         int page = 0;
         int size = 500;
         Page<User> users;
+        LocalDate today = LocalDate.now(clock);
 
         do {
             users = userRepository.findAll(PageRequest.of(page, size));
-            users.forEach(this::updateStatistic);
+            users.forEach(user -> updateStatistic(user, today));
             entityManager.flush();
             entityManager.clear();
             page++;
