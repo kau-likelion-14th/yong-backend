@@ -32,7 +32,7 @@ public class TodoCalendarService {
         LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
 
         List<TodoDate> todoDates = todoDateRepository
-                .findAllByTodo_User_IdAndDateBetween(userId,startDate,endDate);
+                .findAllByTodo_User_IdAndDateBetweenAndCancelledFalse(userId,startDate,endDate);
 
         Map<LocalDate, Long> totalCountByDate = todoDates.stream()
                 .collect(groupingBy(TodoDate::getDate,counting()));

@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.Clock;
 import java.util.List;
 
 @Component
@@ -19,11 +20,12 @@ public class RoutineTodoScheduler {
 
     private final RoutineTodoDateGenerator routineTodoDateGenerator;
     private final TodoRepository todoRepository;
+    private final Clock clock;
 
-    @Scheduled(cron = "0 0 3 * * *")
+    @Scheduled(cron = "0 0 3 * * *", zone = "Asia/Seoul")
     @Transactional
     public void generateRoutineTodoDates() {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(clock);
 
         List<Todo> routineTodos = todoRepository.findAllByRoutineEnabledTrue();
         for(Todo todo : routineTodos) {

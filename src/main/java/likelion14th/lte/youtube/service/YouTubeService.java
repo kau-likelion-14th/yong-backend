@@ -69,8 +69,10 @@ public class YouTubeService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new GeneralException(ErrorCode.USER_NOT_FOUND));
 
-        if (savedSongRepository.existsByUserAndSongId(user, songId)) {
-            throw new GeneralException(ErrorCode.SONG_ALREADY_SAVED);
+        SavedSong existing = savedSongRepository.findByUserAndSongId(user, songId).orElse(null);
+        if (existing != null) {
+            existing.selectAgain();
+            return SavedSongResponse.from(existing);
         }
 
         JsonNode item = getFirstVideo(songId);

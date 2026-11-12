@@ -23,7 +23,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.Clock;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
@@ -34,6 +36,7 @@ public class TodoService {
     private final UserRepository userRepository;
     private final RoutineTodoDateGenerator routineTodoDateGenerator;
     private final CategoryRepository categoryRepository;
+    private final Clock clock;
 
     private User getUserOrThrow(Long userId) {
         return userRepository.findById(userId)
@@ -75,7 +78,7 @@ public class TodoService {
     public List<TodoListResponse> getTodosByDate(Long userId, LocalDate date) {
         User user = getUserOrThrow(userId);
         // 유저 + 날짜 기준 TodoDate 조회
-        List<TodoDate> todoDates = todoDateRepository.findAllByTodo_User_IdAndDate(user.getId(), date);
+        List<TodoDate> todoDates = todoDateRepository.findAllByTodo_User_IdAndDateAndCancelledFalse(user.getId(), date);
         // Dto 변환
         return todoDates.stream()
                 .map(td -> TodoListResponse.from(td.getTodo(), td.isCompleted()))
@@ -98,7 +101,7 @@ public class TodoService {
         Todo todo = getTodoOrThrow(todoId);
         assertOwner(user, todo);
 
-        TodoDate todoDate = todoDateRepository.findByTodo_IdAndDate(todoId, date)
+        TodoDate todoDate = todoDateRepository.findByTodo_IdAndDateAndCancelledFalse(todoId, date)
                 .orElseThrow(() -> new GeneralException(ErrorCode.TODO_DATE_NOT_FOUND));
 
         if (!todo.isRoutineEnabled()) {
@@ -106,7 +109,8 @@ public class TodoService {
             todoRepository.delete(todo);
         } else {
             // 루틴 투두: 그 날짜만 삭제
-            todoDateRepository.delete(todoDate);
+            // 삭제한 날짜를 남겨 두어 정기 생성 시 다시 살아나지 않도록 합니다.
+            todoDate.cancel();
         }
     }
 
@@ -168,11 +172,16 @@ public class TodoService {
             validateRoutineRequest(startDate, endDate, week);
         }
 
+        boolean scheduleChanged = routineEnabled && (
+                !Objects.equals(todo.getStartDate(), startDate)
+                || !Objects.equals(todo.getEndDate(), endDate)
+                || todo.getWeek() != week
+        );
         todo.update(request.getDescription(), category, week, routineEnabled, startDate, endDate);
 
-        if (routineEnabled) {
-            LocalDate today = LocalDate.now();
-            todoDateRepository.deleteAllByTodo_IdAndDateGreaterThanEqual(todoId, today);
+        if (scheduleChanged) {
+            LocalDate today = LocalDate.now(clock);
+            todoDateRepository.deleteAllByTodo_IdAndDateGreaterThanEqualAndCompletedFalseAndCancelledFalse(todoId, today);
             routineTodoDateGenerator.generate(todo, startDate, endDate, today);
         }
 
@@ -186,7 +195,7 @@ public class TodoService {
 
         assertOwner(user,todo);
 
-        TodoDate todoDate = todoDateRepository.findByTodo_IdAndDate(todoId,date)
+        TodoDate todoDate = todoDateRepository.findByTodo_IdAndDateAndCancelledFalse(todoId,date)
                 .orElseThrow(() -> new GeneralException(ErrorCode.TODO_DATE_NOT_FOUND));
 
         if(todoDate.isCompleted()!=completed){

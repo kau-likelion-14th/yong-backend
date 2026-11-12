@@ -39,7 +39,8 @@ class TodoServiceTest {
                 todoDateRepository,
                 userRepository,
                 generator,
-                categoryRepository
+                categoryRepository,
+                java.time.Clock.system(java.time.ZoneId.of("Asia/Seoul"))
         );
         TodoCreateRequest request = mock(TodoCreateRequest.class);
 

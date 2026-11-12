@@ -41,6 +41,10 @@ public class SavedSong {
 
     private Long durationMs;
 
+    public void selectAgain() {
+        this.savedAt = LocalDateTime.now();
+    }
+
     @Builder
     public SavedSong(User user, String songId, String title, String artist,
     String imgUrl, Long durationMs){

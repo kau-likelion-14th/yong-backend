@@ -33,6 +33,13 @@ public class TodoDate extends BaseEntity {
     @Column(nullable = false)
     private boolean completed = false;
 
+    @Column(nullable = false, columnDefinition = "boolean not null default false")
+    private boolean cancelled = false;
+
+    public void cancel() {
+        this.cancelled = true;
+    }
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "todo_id",nullable = false)
     private Todo todo;
