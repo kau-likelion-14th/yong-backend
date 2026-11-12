@@ -2,6 +2,8 @@ package likelion14th.lte.todo.repository;
 
 import likelion14th.lte.todo.entity.TodoDate;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.*;
@@ -18,8 +20,18 @@ public interface TodoDateRepository extends JpaRepository<TodoDate, Long> {
 
     List<TodoDate> findAllByTodo_User_IdAndDateBetween(Long userId, LocalDate startDate, LocalDate endDate);
 
-    boolean existsByTodo_User_IdAndDateAndCompleted(Long userId, LocalDate date, boolean completed);
-
-    long countByTodo_User_IdAndDateBetweenAndCompleted(Long userId, LocalDate startDate, LocalDate endDate, boolean completed);
+    @Query("""
+            SELECT td.date AS date,
+                   SUM(CASE WHEN td.completed = true THEN 1 ELSE 0 END) AS completedCount,
+                   SUM(CASE WHEN td.completed = false THEN 1 ELSE 0 END) AS incompleteCount
+            FROM TodoDate td
+            WHERE td.todo.user.id = :userId
+              AND td.date <= :endDate
+            GROUP BY td.date
+            """)
+    List<TodoDateDailySummary> summarizeByUserIdUntil(
+            @Param("userId") Long userId,
+            @Param("endDate") LocalDate endDate
+    );
 
 }
