@@ -30,7 +30,7 @@ public class FollowService {
         }
 
         String[] parts = name.split("#", 2);
-        if (parts[1].length() != 8) {
+        if (parts[1].length() != 8 && !parts[1].matches("KAKAO[0-9A-F]{8}")) {
             throw new GeneralException(ErrorCode.INVALID_HANDLE_FORMAT);
         }
 
