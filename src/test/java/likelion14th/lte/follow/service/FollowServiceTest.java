@@ -9,9 +9,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Optional;
+import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -47,5 +49,21 @@ class FollowServiceTest {
 
         assertEquals(ErrorCode.INVALID_HANDLE_FORMAT, error.getCode());
         verify(users, never()).findByUserTag(anyString());
+    }
+
+    @Test
+    void nicknameSearchKeepsTheFullFilteredPageCount() {
+        User current = User.builder().username("나").userTag("SELF0001").build();
+        User target = User.builder().username("친구").userTag("KAKAOA1B2C3D4").build();
+        var pageable = PageRequest.of(0, 10);
+        when(users.findById(1L)).thenReturn(Optional.of(current));
+        when(users.findCanFollowUsersByUsername(1L, "%친구%", pageable))
+                .thenReturn(new PageImpl<>(Collections.nCopies(10, target), pageable, 12));
+
+        var result = service.searchCanFollowers(1L, "친구", pageable);
+
+        assertEquals(12, result.getTotalElements());
+        assertEquals(2, result.getTotalPages());
+        assertTrue(result.hasNext());
     }
 }

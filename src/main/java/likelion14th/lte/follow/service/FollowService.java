@@ -24,6 +24,15 @@ public class FollowService {
     private final FollowRepository followRepository;
     private final UserRepository userRepository;
 
+    private void lockUsers(Long fromUserId, Long toUserId) {
+        // 서로를 동시에 팔로우해도 같은 순서로 잠급니다.
+        for (Long id : List.of(Math.min(fromUserId, toUserId), Math.max(fromUserId, toUserId))) {
+            userRepository.findByIdForUpdate(id)
+                    .orElseThrow(() -> new GeneralException(id.equals(fromUserId)
+                            ? ErrorCode.USER_NOT_FOUND : ErrorCode.FOLLOW_TARGET_NOT_FOUND));
+        }
+    }
+
     private static UserNameDto getUserNameDto(String name) {
         if (!name.contains("#")) {
             return new UserNameDto(name, null);
@@ -39,6 +48,7 @@ public class FollowService {
 
     @Transactional
     public FollowUserResponse followUser(Long fromUserId, Long toUserId) {
+        lockUsers(fromUserId, toUserId);
         User fromUser = userRepository.findById(fromUserId)
                 .orElseThrow(() -> new GeneralException(ErrorCode.USER_NOT_FOUND));
 
@@ -65,6 +75,7 @@ public class FollowService {
 
     @Transactional
     public void unfollowUser(Long fromUserId, Long toUserId) {
+        lockUsers(fromUserId, toUserId);
         User fromUser = userRepository.findById(fromUserId)
                 .orElseThrow(() -> new GeneralException(ErrorCode.USER_NOT_FOUND));
 
@@ -75,10 +86,12 @@ public class FollowService {
             throw new GeneralException(ErrorCode.FOLLOW_SELF_NOT_ALLOWED);
         }
 
-        Follow follow = followRepository.findByFromUserAndToUser(fromUser, toUser)
-                .orElseThrow(() -> new GeneralException(ErrorCode.FOLLOW_NOT_FOUND));
+        List<Follow> follows = followRepository.findAllByFromUserAndToUser(fromUser, toUser);
+        if (follows.isEmpty()) {
+            throw new GeneralException(ErrorCode.FOLLOW_NOT_FOUND);
+        }
 
-        followRepository.delete(follow);
+        followRepository.deleteAll(follows);
     }
 
     @Transactional(readOnly = true)
@@ -87,7 +100,9 @@ public class FollowService {
                 .orElseThrow(() -> new GeneralException(ErrorCode.USER_NOT_FOUND));
 
         return followRepository.findByToUser(user).stream()
-                .map(follow -> FollowUserResponse.from(follow.getFromUser()))
+                .map(Follow::getFromUser)
+                .distinct()
+                .map(FollowUserResponse::from)
                 .toList();
     }
 
@@ -97,7 +112,9 @@ public class FollowService {
                 .orElseThrow(() -> new GeneralException(ErrorCode.USER_NOT_FOUND));
 
         return followRepository.findByFromUser(user).stream()
-                .map(follow -> FollowUserResponse.from(follow.getToUser()))
+                .map(Follow::getToUser)
+                .distinct()
+                .map(FollowUserResponse::from)
                 .toList();
     }
 
@@ -122,20 +139,20 @@ public class FollowService {
             User target = userRepository.findByUserTag(nameDto.userTag())
                     .orElse(null);
 
-            if (target == null) {
+            if (target == null || target.getId().equals(userId)
+                    || followRepository.existsByFromUserAndToUser(user, target)) {
                 return Page.empty(pageable);
             }
 
-            users = new PageImpl<>(List.of(target), pageable, 1);
+            List<User> content = pageable.isPaged() && pageable.getOffset() > 0
+                    ? List.of() : List.of(target);
+            users = new PageImpl<>(content, pageable, 1);
         } else {
-            users = userRepository.findByUsernameContainingIgnoreCase(nameDto.userName(), pageable);
+            String nickname = "%" + nameDto.userName().replace("!", "!!")
+                    .replace("%", "!%").replace("_", "!_") + "%";
+            users = userRepository.findCanFollowUsersByUsername(userId, nickname, pageable);
         }
 
-        List<User> canFollowUsers = users.getContent().stream()
-                .filter(target -> !target.getId().equals(userId))
-                .filter(target -> !followRepository.existsByFromUserAndToUser(user, target))
-                .toList();
-
-        return new PageImpl<>(canFollowUsers, pageable, canFollowUsers.size()).map(FollowUserResponse::from);
+        return users.map(FollowUserResponse::from);
     }
 }

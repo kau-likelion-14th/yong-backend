@@ -73,7 +73,7 @@ class TodoDatabasePersistenceTest {
         JpaRepositoryFactory repos = new JpaRepositoryFactory(em);
         TodoDateRepository dates = repos.getRepository(TodoDateRepository.class);
         return new TodoService(repos.getRepository(TodoRepository.class), dates, repos.getRepository(UserRepository.class),
-                new RoutineTodoDateGenerator(dates) {}, repos.getRepository(CategoryRepository.class), CLOCK);
+                new RoutineTodoDateGenerator(dates, CLOCK) {}, repos.getRepository(CategoryRepository.class), CLOCK);
     }
     private TodoCreateRequest createRequest(boolean routine) {
         TodoCreateRequest request = mock(TodoCreateRequest.class);
@@ -129,7 +129,7 @@ class TodoDatabasePersistenceTest {
         transaction(em -> { service(em).deleteTodo(user, todo, deletedDay); return null; });
         transaction(em -> {
             TodoDateRepository dates = new JpaRepositoryFactory(em).getRepository(TodoDateRepository.class);
-            new RoutineTodoDateGenerator(dates) {}.generate(em.find(Todo.class, todo), TODAY, TODAY.plusDays(14), TODAY);
+            new RoutineTodoDateGenerator(dates, CLOCK) {}.generate(em.find(Todo.class, todo), TODAY, TODAY.plusDays(14), TODAY);
             return null;
         });
         assertEquals(0, count(user, deletedDay));
@@ -183,6 +183,105 @@ class TodoDatabasePersistenceTest {
         assertEquals(0, count(user, TODAY.plusDays(7)));
         assertEquals(1, count(user, LocalDate.of(2026, 11, 15)));
         assertEquals(1, count(user, LocalDate.of(2026, 11, 22)));
+    }
+
+    @Test
+    void oldRoutineStartIncludesPastHistoryAndTheCurrentPeriod() {
+        long user = user();
+        TodoCreateRequest request = createRequest(true);
+        when(request.getStartDate()).thenReturn(TODAY.minusYears(2));
+        when(request.getEndDate()).thenReturn(TODAY.plusYears(3));
+        transaction(em -> service(em).createTodo(user, request, TODAY));
+
+        assertEquals(1, count(user, TODAY.minusYears(1).with(java.time.temporal.TemporalAdjusters.nextOrSame(DayOfWeek.THURSDAY))));
+        assertEquals(1, count(user, TODAY));
+        assertEquals(1, count(user, TODAY.plusWeeks(51)));
+        assertEquals(0, count(user, TODAY.plusYears(2)));
+    }
+
+    @Test
+    void withdrawalDeletesTodosDatesAndOtherUserRelations() {
+        long user = user();
+        long other = user();
+        transaction(em -> service(em).createTodo(user, createRequest(true), TODAY));
+        transaction(em -> {
+            User owner = em.find(User.class, user);
+            em.persist(Follow.builder().fromUser(em.find(User.class, other)).toUser(owner).build());
+            em.persist(SavedSong.builder().user(owner).songId("withdraw-song").title("Song").artist("Artist").build());
+            em.persist(RefreshToken.builder().user(owner).refreshToken("isolated-refresh").refreshTokenExpireTime(1L).build());
+            return null;
+        });
+        transaction(em -> {
+            JpaRepositoryFactory repos = new JpaRepositoryFactory(em);
+            new likelion14th.lte.login.service.AuthService(null, repos.getRepository(UserRepository.class),
+                    null, null).withdraw(user);
+            return null;
+        });
+        transaction(em -> {
+            assertNull(em.find(User.class, user));
+            assertNotNull(em.find(User.class, other));
+            assertEquals(0L, em.createQuery("SELECT COUNT(t) FROM Todo t WHERE t.user.id = :id", Long.class)
+                    .setParameter("id", user).getSingleResult());
+            assertEquals(0L, em.createQuery("SELECT COUNT(f) FROM Follow f WHERE f.toUser.id = :id", Long.class)
+                    .setParameter("id", user).getSingleResult());
+            return null;
+        });
+    }
+
+    @Test
+    void legacyDuplicateFollowsCanBeListedAndRemoved() {
+        long user = user();
+        long other = user();
+        transaction(em -> {
+            for (int i = 0; i < 2; i++) {
+                em.persist(Follow.builder().fromUser(em.find(User.class, user)).toUser(em.find(User.class, other)).build());
+            }
+            return null;
+        });
+        transaction(em -> {
+            JpaRepositoryFactory repos = new JpaRepositoryFactory(em);
+            var follows = new likelion14th.lte.follow.service.FollowService(
+                    repos.getRepository(likelion14th.lte.follow.repository.FollowRepository.class),
+                    repos.getRepository(UserRepository.class)) {};
+            assertEquals(1, follows.getFollowings(user).size());
+            follows.unfollowUser(user, other);
+            return null;
+        });
+        transaction(em -> {
+            assertEquals(0L, em.createQuery("SELECT COUNT(f) FROM Follow f WHERE f.fromUser.id = :id", Long.class)
+                    .setParameter("id", user).getSingleResult());
+            return null;
+        });
+    }
+
+    @Test
+    void legacyDuplicateSongsCanBeSelectedAndDeleted() {
+        long user = user();
+        transaction(em -> {
+            for (int i = 0; i < 2; i++) {
+                em.persist(SavedSong.builder().user(em.find(User.class, user))
+                        .songId("duplicate-song").title("Song").artist("Artist").build());
+            }
+            return null;
+        });
+        transaction(em -> {
+            JpaRepositoryFactory repos = new JpaRepositoryFactory(em);
+            var songs = new likelion14th.lte.youtube.service.YouTubeService(null,
+                    repos.getRepository(likelion14th.lte.youtube.repository.SavedSongRepository.class),
+                    repos.getRepository(UserRepository.class));
+            assertEquals(1, songs.mySavedSongs(user).size());
+            songs.saveSong(user, "duplicate-song");
+            em.flush();
+            assertEquals(1L, em.createQuery("SELECT COUNT(s) FROM SavedSong s WHERE s.user.id = :id", Long.class)
+                    .setParameter("id", user).getSingleResult());
+            songs.deleteSavedSong(user, "duplicate-song");
+            return null;
+        });
+        transaction(em -> {
+            assertEquals(0L, em.createQuery("SELECT COUNT(s) FROM SavedSong s WHERE s.user.id = :id", Long.class)
+                    .setParameter("id", user).getSingleResult());
+            return null;
+        });
     }
 
 }

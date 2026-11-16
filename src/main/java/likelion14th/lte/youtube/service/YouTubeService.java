@@ -19,7 +19,9 @@ import org.springframework.web.client.RestTemplate;
 import java.time.Duration;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -66,13 +68,15 @@ public class YouTubeService {
             throw new GeneralException(ErrorCode.BAD_REQUEST);
         }
 
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByIdForUpdate(userId)
                 .orElseThrow(() -> new GeneralException(ErrorCode.USER_NOT_FOUND));
 
-        SavedSong existing = savedSongRepository.findByUserAndSongId(user, songId).orElse(null);
-        if (existing != null) {
-            existing.selectAgain();
-            return SavedSongResponse.from(existing);
+        List<SavedSong> existing = savedSongRepository.findAllByUserAndSongIdOrderBySavedAtDescIdDesc(user, songId);
+        if (!existing.isEmpty()) {
+            SavedSong selected = existing.getFirst();
+            savedSongRepository.deleteAll(existing.subList(1, existing.size()));
+            selected.selectAgain();
+            return SavedSongResponse.from(selected);
         }
 
         JsonNode item = getFirstVideo(songId);
@@ -108,20 +112,24 @@ public class YouTubeService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new GeneralException(ErrorCode.USER_NOT_FOUND));
 
+        Set<String> songIds = new HashSet<>();
         return savedSongRepository.findAllByUserOrderBySavedAtDesc(user)
                 .stream()
+                .filter(song -> songIds.add(song.getSongId()))
                 .map(SavedSongResponse::from)
                 .toList();
     }
 
     public void deleteSavedSong(Long userId, String songId) {
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByIdForUpdate(userId)
                 .orElseThrow(() -> new GeneralException(ErrorCode.USER_NOT_FOUND));
 
-        SavedSong savedSong = savedSongRepository.findByUserAndSongId(user, songId)
-                .orElseThrow(() -> new GeneralException(ErrorCode.SONG_NOT_FOUND));
+        List<SavedSong> songs = savedSongRepository.findAllByUserAndSongIdOrderBySavedAtDescIdDesc(user, songId);
+        if (songs.isEmpty()) {
+            throw new GeneralException(ErrorCode.SONG_NOT_FOUND);
+        }
 
-        savedSongRepository.delete(savedSong);
+        savedSongRepository.deleteAll(songs);
     }
 
     private String extractThumbnail(JsonNode snippet) {

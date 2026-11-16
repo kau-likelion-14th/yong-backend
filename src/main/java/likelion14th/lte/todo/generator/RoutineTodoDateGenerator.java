@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.time.DayOfWeek;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,11 +24,13 @@ import java.util.stream.Collectors;
 public class RoutineTodoDateGenerator {
 
     private final TodoDateRepository todoDateRepository;
+    private final Clock clock;
 
     public void generate(Todo todo, LocalDate startDate, LocalDate endDate, LocalDate fromDate) {
 
         LocalDate start = startDate.isAfter(fromDate) ? startDate : fromDate;
-        LocalDate endLimit = start.plusYears(1).minusDays(1);
+        LocalDate today = LocalDate.now(clock);
+        LocalDate endLimit = (start.isAfter(today) ? start : today).plusYears(1).minusDays(1);
         LocalDate end = endDate.isBefore(endLimit) ? endDate : endLimit;
 
         DayOfWeek repeatDay = todo.getWeek().toDayOfWeek();

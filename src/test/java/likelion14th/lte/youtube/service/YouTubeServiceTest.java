@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -27,8 +28,8 @@ class YouTubeServiceTest {
         LocalDateTime oldDate = LocalDateTime.of(2020, 1, 1, 0, 0);
         ReflectionTestUtils.setField(song, "savedAt", oldDate);
         ReflectionTestUtils.setField(song, "id", 10L);
-        when(users.findById(1L)).thenReturn(Optional.of(user));
-        when(songs.findByUserAndSongId(user, "old-song")).thenReturn(Optional.of(song));
+        when(users.findByIdForUpdate(1L)).thenReturn(Optional.of(user));
+        when(songs.findAllByUserAndSongIdOrderBySavedAtDescIdDesc(user, "old-song")).thenReturn(List.of(song));
         YouTubeService service = new YouTubeService(client, songs, users);
 
         SavedSongResponse first = service.saveSong(1L, "old-song");
