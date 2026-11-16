@@ -42,7 +42,7 @@ class TodoPersistenceTest {
         when(categories.findByCategoryName("공부")).thenReturn(Optional.of(category));
         todo = Todo.create(user, "Original", true, LocalDate.of(2026, 11, 1), LocalDate.of(2026, 11, 30), category, WeekEnum.THU);
         ReflectionTestUtils.setField(todo, "id", 10L);
-        when(todos.findById(10L)).thenReturn(Optional.of(todo));
+        when(todos.findByIdForUpdate(10L)).thenReturn(Optional.of(todo));
         Clock clock = Clock.fixed(Instant.parse("2026-11-11T15:30:00Z"), ZoneId.of("Asia/Seoul"));
         service = new TodoService(todos, dates, users, generator, categories, clock);
     }

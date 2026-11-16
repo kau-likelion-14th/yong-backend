@@ -60,7 +60,7 @@ public enum ErrorCode implements BaseCode { // 실패
     TODO_ROUTINE_END_DATE_REQUIRED(HttpStatus.BAD_REQUEST, "TODO_4001", "종료 날짜 입력은 필수 입니다."),
     TODO_ROUTINE_DATE_RANGE_INVALID(HttpStatus.BAD_REQUEST, "TODO_4002", "시작 날짜는 종료 날짜의 이전이어야 합니다."),
     TODO_ROUTINE_WEEK_REQUIRED(HttpStatus.BAD_REQUEST, "TODO_4003", "요일 선택은 필수 입니다."),
-    TODO_ROUTINE_DAY_OF_WEEK_INVALID(HttpStatus.BAD_REQUEST, "TODO_4004", "옳지 않은 요일입니다."),
+    TODO_ROUTINE_DAY_OF_WEEK_INVALID(HttpStatus.BAD_REQUEST, "TODO_4004", "선택한 기간에 해당 반복 요일이 포함되어야 합니다."),
 
     TODO_DESCRIPTION_REQUIRED(HttpStatus.BAD_REQUEST, "TODO_4005", "투두 내용 입력은 필수 입니다."),
     TODO_CATEGORY_REQUIRED(HttpStatus.BAD_REQUEST, "TODO_4006", "카테고리 선택은 필수 입니다."),
