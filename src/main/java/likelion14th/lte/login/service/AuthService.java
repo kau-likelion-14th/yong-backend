@@ -113,7 +113,7 @@ public class AuthService {
     }
 
     public void withdraw(Long userId) {
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByIdForUpdate(userId)
                 .orElseThrow(() -> new GeneralException(ErrorCode.USER_NOT_FOUND));
 
         userRepository.delete(user);

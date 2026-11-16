@@ -84,7 +84,8 @@ class TodoPersistenceTest {
         verify(dates, never()).delete(any());
         verify(todos, never()).delete(any());
         when(dates.findAllByTodo_IdAndDateBetween(10L, today, today)).thenReturn(List.of(occurrence));
-        new RoutineTodoDateGenerator(dates) {}.generate(todo, today, today, today);
+        new RoutineTodoDateGenerator(dates, Clock.fixed(today.atStartOfDay(ZoneId.of("Asia/Seoul")).toInstant(),
+                ZoneId.of("Asia/Seoul"))) {}.generate(todo, today, today, today);
         verify(dates).saveAll(argThat(values -> !values.iterator().hasNext()));
     }
 }

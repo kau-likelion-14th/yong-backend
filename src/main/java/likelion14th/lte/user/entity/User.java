@@ -6,6 +6,7 @@ import likelion14th.lte.login.domain.RefreshToken;
 import likelion14th.lte.youtube.domain.SavedSong;
 import likelion14th.lte.follow.entity.Follow;
 import likelion14th.lte.statistic.entity.Statistic;
+import likelion14th.lte.todo.entity.Todo;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -52,6 +53,9 @@ public class User extends BaseEntity {
             orphanRemoval = true)
     private List<SavedSong> saveSongs;
 
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Todo> todos;
+
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private RefreshToken refreshToken;
 
@@ -71,6 +75,7 @@ public class User extends BaseEntity {
         this.followings = new ArrayList<>();
         this.statistic = Statistic.create();
         this.saveSongs = new ArrayList<>();
+        this.todos = new ArrayList<>();
     }
     public void fixUserProfile(String s3ImageUrl, String s3ImageKey){
         this.s3ImageKey = s3ImageKey;
