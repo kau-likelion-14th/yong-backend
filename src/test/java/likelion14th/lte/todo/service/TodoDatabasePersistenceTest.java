@@ -200,6 +200,58 @@ class TodoDatabasePersistenceTest {
     }
 
     @Test
+    void routineWithoutAMatchingWeekdayCannotBeCreatedOrUpdated() {
+        long user = user();
+        TodoCreateRequest invalid = createRequest(true);
+        when(invalid.getEndDate()).thenReturn(TODAY);
+        when(invalid.getWeek()).thenReturn(WeekEnum.FRI);
+        var creationError = assertThrows(likelion14th.lte.global.exception.GeneralException.class,
+                () -> transaction(em -> service(em).createTodo(user, invalid, TODAY)));
+        assertEquals(likelion14th.lte.global.api.ErrorCode.TODO_ROUTINE_DAY_OF_WEEK_INVALID, creationError.getCode());
+        assertEquals(0, count(user, TODAY));
+
+        long todo = transaction(em -> service(em).createTodo(user, createRequest(true), TODAY).getTodoId());
+        TodoUpdateRequest update = updateRequest(true, "Invalid weekday");
+        when(update.getEndDate()).thenReturn(TODAY);
+        when(update.getWeek()).thenReturn(WeekEnum.FRI);
+        assertThrows(likelion14th.lte.global.exception.GeneralException.class,
+                () -> transaction(em -> service(em).updateTodoDetail(user, todo, update)));
+        transaction(em -> {
+            Todo saved = em.find(Todo.class, todo);
+            assertEquals(WeekEnum.THU, saved.getWeek());
+            assertEquals("Persisted task", saved.getDescription());
+            return null;
+        });
+        assertEquals(1, count(user, TODAY.plusDays(14)));
+    }
+
+    @Test
+    void concurrentRoutineUpdatesLeaveDatesMatchingTheSavedSchedule() throws Exception {
+        long user = user();
+        long todo = transaction(em -> service(em).createTodo(user, createRequest(true), TODAY).getTodoId());
+        TodoUpdateRequest sunday = updateRequest(true, "Sunday schedule");
+        when(sunday.getWeek()).thenReturn(WeekEnum.SUN);
+        TodoUpdateRequest monday = updateRequest(true, "Monday schedule");
+        when(monday.getWeek()).thenReturn(WeekEnum.MON);
+        var ready = new java.util.concurrent.CountDownLatch(1);
+        try (var executor = java.util.concurrent.Executors.newFixedThreadPool(2)) {
+            var first = executor.submit(() -> { ready.await(); return transaction(em -> service(em).updateTodoDetail(user, todo, sunday)); });
+            var second = executor.submit(() -> { ready.await(); return transaction(em -> service(em).updateTodoDetail(user, todo, monday)); });
+            ready.countDown();
+            first.get(10, java.util.concurrent.TimeUnit.SECONDS);
+            second.get(10, java.util.concurrent.TimeUnit.SECONDS);
+        }
+        transaction(em -> {
+            Todo saved = em.find(Todo.class, todo);
+            TodoDateRepository dates = new JpaRepositoryFactory(em).getRepository(TodoDateRepository.class);
+            var occurrences = dates.findAllByTodo_IdAndDateBetween(todo, TODAY, TODAY.plusDays(14));
+            assertFalse(occurrences.isEmpty());
+            assertTrue(occurrences.stream().allMatch(date -> date.getDate().getDayOfWeek() == saved.getWeek().toDayOfWeek()));
+            return null;
+        });
+    }
+
+    @Test
     void withdrawalDeletesTodosDatesAndOtherUserRelations() {
         long user = user();
         long other = user();

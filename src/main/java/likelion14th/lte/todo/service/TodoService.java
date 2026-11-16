@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.Clock;
+import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import java.util.Objects;
 
@@ -45,6 +46,11 @@ public class TodoService {
 
     private Todo getTodoOrThrow(Long todoId) {
         return todoRepository.findById(todoId)
+                .orElseThrow(() -> new GeneralException(ErrorCode.TODO_NOT_FOUND));
+    }
+
+    private Todo lockTodoOrThrow(Long todoId) {
+        return todoRepository.findByIdForUpdate(todoId)
                 .orElseThrow(() -> new GeneralException(ErrorCode.TODO_NOT_FOUND));
     }
 
@@ -72,6 +78,9 @@ public class TodoService {
         if (startDate.isAfter(endDate)) {
             throw new GeneralException(ErrorCode.TODO_ROUTINE_DATE_RANGE_INVALID);
         }
+        if (startDate.with(TemporalAdjusters.nextOrSame(week.toDayOfWeek())).isAfter(endDate)) {
+            throw new GeneralException(ErrorCode.TODO_ROUTINE_DAY_OF_WEEK_INVALID);
+        }
     }
 
     @Transactional(readOnly = true)
@@ -97,8 +106,8 @@ public class TodoService {
 
     @Transactional
     public void deleteTodo(Long userId, Long todoId, LocalDate date) {
+        Todo todo = lockTodoOrThrow(todoId);
         User user = getUserOrThrow(userId);
-        Todo todo = getTodoOrThrow(todoId);
         assertOwner(user, todo);
 
         TodoDate todoDate = todoDateRepository.findByTodo_IdAndDateAndCancelledFalse(todoId, date)
@@ -150,8 +159,8 @@ public class TodoService {
 
     @Transactional
     public TodoDetailResponse updateTodoDetail(Long userId, Long todoId, TodoUpdateRequest request) {
+        Todo todo = lockTodoOrThrow(todoId);
         User user = getUserOrThrow(userId);
-        Todo todo = getTodoOrThrow(todoId);
         Category category = getCategoryOrThrow(request.getCategoryName());
 
         assertOwner(user, todo);
@@ -190,8 +199,8 @@ public class TodoService {
 
     @Transactional
     public TodoListResponse todoComplete(Long userId, Long todoId, LocalDate date, boolean completed) {
+        Todo todo = lockTodoOrThrow(todoId);
         User user = getUserOrThrow(userId);
-        Todo todo = getTodoOrThrow(todoId);
 
         assertOwner(user,todo);
 
